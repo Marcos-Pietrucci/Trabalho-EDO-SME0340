@@ -1,11 +1,13 @@
+% SME0340
+% Marcos Vinícius Firmino Pietrucci 10770072
 
-%Basta mudar os valores e reexecutar o programa para testar novos parâmetros!!
-%Gráficos são feitos automaticamente!!
+%Basta mudar os valores e reexecutar o programa para testar novos parâmetros
+%Gráficos são feitos automaticamente
 global h g t0 tf;
 h = 0.0001;
 g = 9.8;
 t0 = 0.0;
-tf = 2.0;
+tf = 3.0;
 
 preditor_corretor();
 
@@ -51,7 +53,6 @@ function preditor_corretor
     %preditores e corretores ao mesmo tempo. Isso por que as equações do
     %sistema possuem mais de uma variável dependente.
     
-   
     while(temp <= tf)
 
         %Equação dos preditores
@@ -68,8 +69,8 @@ function preditor_corretor
         corret_x(n+1) = corret_x(n) + (h/2)*(pred_x(n) + pred_x(n+1));
         corret_y(n+1) = corret_y(n) + (h/2)*(pred_y(n) + pred_y(n+1));  
         corret_T(n+1) = corret_T(n) + (h/2)*(3*g*pred_v(n) + 3*g*pred_v(n+1));
-        corret_u(n+1) = corret_u(n) + (h/2)*((pred_T(n)*corret_x(n)) + (corret_T(n+1)*corret_x(n)));
-        corret_v(n+1) = corret_v(n) + (h/2)*((pred_T(n)*corret_y(n)) - g + pred_T(n+1)*corret_y(n+1) - g);        
+        corret_u(n+1) = corret_u(n) + (h/2)*((pred_T(n)*corret_x(n)) + (pred_T(n+1)*corret_x(n+1)));
+        corret_v(n+1) = corret_v(n) + (h/2)*((pred_T(n)*corret_y(n)) + pred_T(n+1)*corret_y(n+1) - 2*g);        
         
         % Adicionar os valores dos corretores como os oficiais
         pred_T(n+1) = corret_T(n+1);
@@ -109,7 +110,7 @@ function preditor_corretor
     % --- Tração --- %
     figure
     plot(corret_T, 'k');
-    title('Tensão na haste (tf = 2s)')
+    title('Tensão na haste')
     xlabel('t')
     ylabel('Tensão')
     
