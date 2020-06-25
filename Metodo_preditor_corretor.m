@@ -1,22 +1,27 @@
 
-%Variáveis de uso global
+%Basta mudar os valores e reexecutar o programa para testar novos parâmetros!!
+%Gráficos são feitos automaticamente!!
 global h g t0 tf;
 h = 0.0001;
 g = 9.8;
 t0 = 0.0;
-tf = 3.0;
+tf = 2.0;
 
 preditor_corretor();
-
 
 %Função que utiliza o método preditor corretor para determinar a posição do
 %pêndulo numéricamente
 function preditor_corretor
    
-    global h g t0 tf;
-    % y_n+1 = yn + h*f(t_n, y_n)
+    global h g t0 tf
    
+    % Salvará os intervalos de tempo para plotar os gráficos
+    interval = zeros(1, (tf/h));
+    interval(1) = h;
+    
     % ----- Definindo vetores ----- %
+    pred_x = zeros(1, (tf/h));
+    pred_y = zeros(1, (tf/h));
     pred_u = zeros(1, (tf/h));
     pred_v = zeros(1, (tf/h));
     pred_T = zeros(1, (tf/h));
@@ -27,6 +32,8 @@ function preditor_corretor
     corret_T = zeros(1, (tf/h));
     
     % ----- Condições iniciais ----- %
+    pred_x(1) = 1;
+    pred_y(1) = 0;
     pred_u(1) = 0;
     pred_v(1) = 0;
     pred_T(1) = 0;
@@ -36,46 +43,45 @@ function preditor_corretor
     corret_v(1) = 0;
     corret_T(1) = 0;
     n = 1;
-    temp = t0;
+    temp = t0;    
     
     % ----- Aplicação do método ----- %
     
-    %Infelizmente, por limitações do método, preciso calcular todos os
+    %Para proceder com o método precisamos calcular todos os
     %preditores e corretores ao mesmo tempo. Isso por que as equações do
     %sistema possuem mais de uma variável dependente.
     
    
     while(temp <= tf)
+
+        %Equação dos preditores
+        pred_T(n+1) = pred_T(n) + h*(3*g*pred_v(n));
+        pred_u(n+1) = pred_u(n) + h*(pred_T(n) * pred_x(n));
+        pred_v(n+1) = pred_v(n) + h*(pred_T(n) * pred_y(n) - g);
+        pred_x(n+1) = pred_u(n+1);
+        pred_y(n+1) = pred_v(n+1);
         
-        %Eu não consegui separar as equações do preditor e do corretor,
-        %isso por que algumas delas requerem valores calculados durante a
-        %própria iteração:
-        %Exemplo:
-        %       Preditor de v requer o cálculo anterior do preditor de T,
-        %       pois v depende de Y e de T
-        %       Só que, ao mesmo tempo, o corretor de T requer o preditor
-        %       de V também. Então eu tive que embaralhar os preditores e os
-        %       corretores de modo que cada valor tenha sido calculado
-        %       imediatamente antes do seu uso ser necessário.
+        %Nota-se que os preditores de X e Y são as suas respectivas
+        %velocididades instanâneas no momento (n+1)
         
-        %Não fui capaz de separar as equações do preditor e do corretor
-        
-        pred_T(n+1) = pred_T(n) + h*(3*g*corret_v(n));
-        pred_v(n+1) = pred_v(n) + h*((pred_T(n)) * corret_y(n) - g);
-        corret_T(n+1) = corret_T(n) + (h/2)*(3*g*corret_v(n) + 3*g*pred_v(n+1));
-        corret_y(n+1) = corret_y(n) + (pred_v(n+1) * h);
-        corret_v(n+1) = corret_v(n) + (h/2)*((corret_T(n)*corret_y(n)) - g + pred_T(n+1)*corret_y(n+1) - g);
-        pred_u(n+1) = pred_u(n) + h*(pred_T(n) * corret_x(n));
+        %Equações dos corretores
+        corret_x(n+1) = corret_x(n) + (h/2)*(pred_x(n) + pred_x(n+1));
+        corret_y(n+1) = corret_y(n) + (h/2)*(pred_y(n) + pred_y(n+1));  
+        corret_T(n+1) = corret_T(n) + (h/2)*(3*g*pred_v(n) + 3*g*pred_v(n+1));
         corret_u(n+1) = corret_u(n) + (h/2)*((pred_T(n)*corret_x(n)) + (corret_T(n+1)*corret_x(n)));
-        corret_x(n+1) = corret_x(n) + h*(corret_u(n+1));
+        corret_v(n+1) = corret_v(n) + (h/2)*((pred_T(n)*corret_y(n)) - g + pred_T(n+1)*corret_y(n+1) - g);        
         
         % Adicionar os valores dos corretores como os oficiais
         pred_T(n+1) = corret_T(n+1);
         pred_v(n+1) = corret_v(n+1);
         pred_u(n+1) = corret_u(n+1);
+        pred_x(n+1) = corret_u(n+1);
+        pred_y(n+1) = corret_v(n+1);
         
-        temp = temp + h;
-        n = n + 1;
+        % Incrementos da iteração
+        interval(n+1) = temp; % Incrementa o intervalo de tempo que será usado para plot
+        temp = temp + h;      % Incrementa o tempo
+        n = n + 1;            
         
     end  
     
@@ -95,7 +101,7 @@ function preditor_corretor
     ylabel('posição x')
     
     figure
-    plot(corret_x, corret_y, 'g');
+    plot(corret_x, corret_y, 'b');
     title('Posição do pêndulo no plano XY')
     xlabel('X(t)')
     ylabel('Y(t)')
@@ -103,16 +109,16 @@ function preditor_corretor
     % --- Tração --- %
     figure
     plot(corret_T, 'k');
-    title('Tensão na haste')
+    title('Tensão na haste (tf = 2s)')
     xlabel('t')
     ylabel('Tensão')
     
     % --- Velocidades e posições --- %
-    interval = 0:h:tf;
     figure
     plot(interval, corret_x, interval, corret_y, interval, corret_u, interval, corret_v);
     title('Posição e velocidade')
     xlabel('t')
     legend({'X(t)','Y(t)','Vx(t)','Vy(t)'},'Location','south','NumColumns',2)
+    
 end  
     
